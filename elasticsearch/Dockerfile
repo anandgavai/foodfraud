@@ -1,5 +1,10 @@
 FROM ubuntu:16.04
+MAINTAINER Anand Gavai <anand.gavai@gmail.com>
 
+# Create a user anandgavai and home directory for him
+RUN useradd -ms /bin/bash anandgavai
+USER anandgavai
+WORKDIR /home/anandgavai
 
 RUN apt-get update 
 RUN apt-get -y upgrade
@@ -12,18 +17,6 @@ RUN apt-get update
 RUN (echo oracle-java8-installer shared/accepted-oracle-license-v1-1 select true | /usr/bin/debconf-set-selections)
 RUN apt-get install --no-install-recommends -y oracle-java8-installer
 
-# Install Golang
-FROM golang:latest
-RUN mkdir -p /root/goProjects
-WORKDIR /root/goProjects
-
-ENV GOPATH=/root/goProjects
-
-# Install R and its dependencies
-FROM rocker/verse:latest
-RUN Rscript -e "install.packages(c('feedeR','XML','xml2','magrittr','jsonlite','reshape2','stringi','stringr'),dependencies=TRUE,repos='http://cran.rstudio.com/')"
-
-
 
 # Install Elasticsearch
 RUN wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-6.1.4.tar.gz
@@ -31,12 +24,13 @@ RUN gunzip elasticsearch-6.1.4.tar.gz
 RUN tar -xvf elasticsearch-6.1.4.tar
 RUN rm elasticsearch-6.1.4.tar
 
-ENV PATH /elasticsearch/bin
+USER root
+RUN /elasticsearch-6.1.4/bin/elasticsearch-plugin install x-pack --batch
+
+USER anandgavai
+CMD ["/elasticsearch-6.1.4/bin/elasticsearch"]
 
 EXPOSE 9200 9300
 
-CMD ["elasticsearch"]
-
-
-VOLUME ["/opt/elasticsearch/data","/opt/elasticsearch/logs"]
+# VOLUME ["/opt/elasticsearch/data","/opt/elasticsearch/logs"]
 
